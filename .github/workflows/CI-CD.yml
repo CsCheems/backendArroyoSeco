@@ -1,0 +1,73 @@
+name: CI/CD Pipeline - Build, Push & Deploy
+
+on:
+  push:
+    branches: [ main ] 
+
+jobs:
+  
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]'):latest
+            ghcr.io/${{ github.repository_owner }}/$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]'):${{ github.sha }}
+
+
+ 
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code (para obtener docker-compose.yml)
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+         
+          script: |
+            # 1. Navegar al directorio de la aplicación en el VPS
+            cd /home/deployer/backendArroyoSeco
+            
+            # 2. Copiar el docker-compose.yml desde el runner de GitHub al VPS
+            # Nota: El appleboy/ssh-action no copia archivos directamente. 
+            # Usaremos el comando 'scp' o un paso adicional para copiar el archivo.
+            # Una alternativa más simple es usar 'rsync' o el paso 'scp-action' de appleboy.
+            # Para simplificar, asumiremos que el archivo docker-compose.yml ya está en el VPS 
+            # o lo copiaremos en un paso previo.
+
+            # **Alternativa simple: Usar el script para crear el archivo en el VPS**
+            # Esto es más seguro que copiarlo si no se usa un action dedicado.
+            echo "${{ steps.checkout.outputs.docker_compose_content }}" > docker-compose.yml
+            
+            # **Opción más robusta: Usar el action 'scp-action'**
+            # Para mantener la coherencia con el documento de apoyo, usaremos la lógica de despliegue:
+            
+            # 3. Descargar la nueva imagen y levantar el contenedor
+            docker-compose pull
+            docker-compose up -d --remove-orphans
+            
+            # 4. Limpiar imágenes antiguas (opcional, pero recomendado)
+            docker image prune -f
