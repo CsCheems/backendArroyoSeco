@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   backend: 
-    image: ghcr.io/<cscheems>/<backendArroyoSeco>
+    image: ghcr.io/<cscheems>/<backendarroyoseco>
     container_name: backend-arroyoseco
     restart: always
     ports:
