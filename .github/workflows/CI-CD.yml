@@ -30,6 +30,13 @@ jobs:
             ghcr.io/cscheems/backendarroyoseco:latest
             ghcr.io/cscheems/backendarroyoseco:${{ github.sha }}
 
+      - name: Start SSH agent and add key
+        run: |
+          eval "$(ssh-agent -s)"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+          chmod 600 key.pem
+          ssh-add key.pem <<< "${{ secrets.SSH_PASSPHRASE }}"
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
