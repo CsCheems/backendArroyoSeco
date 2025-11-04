@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  backend: 
+    image: ghcr.io/<cscheems>/<backendArroyoSeco>
+    container_name: backend-arroyoseco
+    restart: always
+    ports:
+      -"8080:8080"
