@@ -27,31 +27,34 @@ jobs:
           context: .
           push: true
           tags: |
+            # Asegúrate de que el nombre del repositorio sea correcto
             ghcr.io/cscheems/backendarroyoseco:latest
             ghcr.io/cscheems/backendarroyoseco:${{ github.sha }}
-
-      - name: Start SSH agent and add key
-        run: |
-          eval "$(ssh-agent -s)"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
-          chmod 600 key.pem
-          ssh-add key.pem <<< "${{ secrets.SSH_PASSPHRASE }}"
 
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code (para obtener docker-compose.yml)
-        uses: actions/checkout@v4
-
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # AÑADIDO: Parámetro para la contraseña de la clave privada
+          passphrase: ${{ secrets.SSH_PASSPHRASE }} 
           script: |
+            # 1. Navegar al directorio de la aplicación en el VPS
             cd /home/deployer/backendArroyoSeco
+            
+            # 2. Asegurarse de que el docker-compose.yml esté en el VPS
+            # Si el archivo no está en el VPS, el pull fallará.
+            # Si el archivo está en el repositorio, puedes usar un paso de 'scp'
+            # o asegurarte de que el archivo se suba al VPS en un paso previo.
+            
+            # 3. Descargar la nueva imagen y levantar el contenedor
             docker-compose pull
             docker-compose up -d --remove-orphans
+            
+            # 4. Limpiar imágenes antiguas (opcional, pero recomendado)
             docker image prune -f
