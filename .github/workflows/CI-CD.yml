@@ -27,7 +27,6 @@ jobs:
           context: .
           push: true
           tags: |
-            # Asegúrate de que el nombre del repositorio sea correcto
             ghcr.io/cscheems/backendarroyoseco:latest
             ghcr.io/cscheems/backendarroyoseco:${{ github.sha }}
 
@@ -41,20 +40,9 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # AÑADIDO: Parámetro para la contraseña de la clave privada
           passphrase: ${{ secrets.SSH_PASSPHRASE }} 
           script: |
-            # 1. Navegar al directorio de la aplicación en el VPS
             cd /home/deployer/backendArroyoSeco
-            
-            # 2. Asegurarse de que el docker-compose.yml esté en el VPS
-            # Si el archivo no está en el VPS, el pull fallará.
-            # Si el archivo está en el repositorio, puedes usar un paso de 'scp'
-            # o asegurarte de que el archivo se suba al VPS en un paso previo.
-            
-            # 3. Descargar la nueva imagen y levantar el contenedor
             docker-compose pull
             docker-compose up -d --remove-orphans
-            
-            # 4. Limpiar imágenes antiguas (opcional, pero recomendado)
             docker image prune -f
