@@ -2,7 +2,7 @@ name: CI/CD Pipeline - Build, Push & Deploy
 
 on:
   push:
-    branches: [ master ] 
+    branches: [ main ] 
 
 jobs:
   
